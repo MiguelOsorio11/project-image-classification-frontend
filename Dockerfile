@@ -1,43 +1,51 @@
-# syntax=docker/dockerfile:1.7
+# Multi-stage build for optimized production image
+FROM node:20-alpine AS builder
 
-FROM node:20-alpine AS base
-ENV NODE_ENV=production
-ENV NEXT_TELEMETRY_DISABLED=1
 WORKDIR /app
-RUN apk add --no-cache libc6-compat && corepack enable
 
-# Instala deps (incluye dev) para construir
-FROM base AS deps
-COPY pnpm-lock.yaml package.json ./
-RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
-    pnpm install --frozen-lockfile
+# Copiar package.json y package-lock.json
+COPY package.json ./
+COPY package-lock.json ./
 
-# Construye la app
-FROM base AS builder
-COPY --from=deps /app/node_modules ./node_modules
+# Instalar dependencias
+RUN npm ci
+
+# Copiar código fuente
 COPY . .
-RUN pnpm build
 
-# Imagen de producción
-FROM base AS runner
-# Crea usuario no root (igual que tu v0)
-RUN addgroup -g 1001 -S nodejs && adduser -S nextjs -u 1001 -G nodejs
+# Build de la aplicación Next.js
+RUN npm run build
 
-# Instala solo deps de producción
-COPY --chown=nextjs:nodejs pnpm-lock.yaml package.json ./
-RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
-    pnpm install --prod --frozen-lockfile
+# Etapa de producción
+FROM node:20-alpine
 
-# Copia el build y assets
-COPY --from=builder --chown=nextjs:nodejs /app/.next ./.next
-COPY --from=builder --chown=nextjs:nodejs /app/public ./public
+WORKDIR /app
 
+# Copiar package.json solamente
+COPY package.json ./
+
+# Instalar solo dependencias de producción
+RUN npm ci --only=production
+
+# Copiar la build de la etapa anterior
+COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/public ./public
+
+# Crear usuario no-root por seguridad
+RUN addgroup -g 1001 -S nodejs
+RUN adduser -S nextjs -u 1001
 USER nextjs
+
+# Exponer puerto
 EXPOSE 3000
 
-# Healthcheck como en tu v0
+# Variables de entorno
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+
+# Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD node -e "require('http').get('http://localhost:3000', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"
 
-# Fuerza bind a 0.0.0.0 y puerto 3000
-CMD ["pnpm", "start", "--", "-p", "3000", "-H", "0.0.0.0"]
+# Comando de inicio
+CMD ["npm", "start"]
