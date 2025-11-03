@@ -1,6 +1,7 @@
 "use client"
 
 import { TrendingUp } from "lucide-react"
+import { ImageModal } from "./image-modal"
 
 interface Alternative {
   label: string
@@ -56,6 +57,13 @@ export function PredictionResult({ prediction }: PredictionResultProps) {
         {/* Timestamp */}
         <p className="text-xs text-muted-foreground mt-4">{prediction.timestamp.toLocaleString("es-ES")}</p>
       </div>
+
+      {/* Image Thumbnail - Clickable for Modal */}
+      {prediction.image && (
+        <div className="bg-card border border-border rounded-lg overflow-hidden">
+          <ImageModal image={prediction.image} className="w-full h-auto object-cover rounded-lg" />
+        </div>
+      )}
 
       {/* Alternative Predictions */}
       {prediction.alternatives && prediction.alternatives.length > 0 && (
