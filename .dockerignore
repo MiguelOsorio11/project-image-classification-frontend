@@ -11,3 +11,10 @@ dist
 build
 coverage
 .eslintcache
+Dockerfile*
+docker-compose*.yml
+node_modules
+.next
+*.log
+.env
+.env.*
