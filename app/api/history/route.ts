@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server"
 
-const BACKEND_URL = "https://clasificadorml-be-473939580343.us-central1.run.app"
+const BACKEND_URL = process.env.BACKEND_URL
+
+if (!BACKEND_URL) {
+  throw new Error("BACKEND_URL environment variable is not set")
+}
 
 export async function GET() {
   try {
