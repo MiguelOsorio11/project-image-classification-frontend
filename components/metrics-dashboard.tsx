@@ -1,6 +1,7 @@
 "use client"
 
 import { BarChart3, Zap, Target } from "lucide-react"
+import { useMemo } from "react"
 
 interface Prediction {
   id: string
@@ -16,24 +17,38 @@ interface MetricsDashboardProps {
 }
 
 export function MetricsDashboard({ predictions }: MetricsDashboardProps) {
-  // Calculate metrics
-  const totalPredictions = predictions.length
-  const avgConfidence =
-    predictions.length > 0
-      ? ((predictions.reduce((sum, p) => sum + p.confidence, 0) / predictions.length) * 100).toFixed(1)
-      : 0
+  const metrics = useMemo(() => {
+    console.log("[v0] Calculating metrics with", predictions.length, "predictions")
 
-  const classificationCounts: Record<string, number> = {}
-  predictions.forEach((p) => {
-    classificationCounts[p.classification] = (classificationCounts[p.classification] || 0) + 1
-  })
-  const mostCommon =
-    Object.entries(classificationCounts).length > 0
-      ? Object.entries(classificationCounts).sort(([, a], [, b]) => b - a)[0][0]
-      : "N/A"
+    const totalPredictions = predictions.length
+    const avgConfidence =
+      predictions.length > 0
+        ? ((predictions.reduce((sum, p) => sum + p.confidence, 0) / predictions.length) * 100).toFixed(1)
+        : 0
 
-  // Calculate average response time (mock)
-  const avgResponseTime = predictions.length > 0 ? "245ms" : "N/A"
+    const classificationCounts: Record<string, number> = {}
+    predictions.forEach((p) => {
+      classificationCounts[p.classification] = (classificationCounts[p.classification] || 0) + 1
+    })
+
+    console.log("[v0] Classification counts:", classificationCounts)
+
+    const mostCommon =
+      Object.entries(classificationCounts).length > 0
+        ? Object.entries(classificationCounts).sort(([, a], [, b]) => b - a)[0][0]
+        : "N/A"
+
+    console.log("[v0] Most common class:", mostCommon)
+
+    const avgResponseTime = predictions.length > 0 ? "245ms" : "N/A"
+
+    return {
+      totalPredictions,
+      avgConfidence,
+      mostCommon,
+      avgResponseTime,
+    }
+  }, [predictions])
 
   return (
     <div className="space-y-3">
@@ -47,7 +62,7 @@ export function MetricsDashboard({ predictions }: MetricsDashboardProps) {
             <p className="text-xs text-muted-foreground">Predicciones Totales</p>
             <BarChart3 className="w-4 h-4 text-primary" />
           </div>
-          <p className="text-2xl font-bold text-foreground">{totalPredictions}</p>
+          <p className="text-2xl font-bold text-foreground">{metrics.totalPredictions}</p>
         </div>
 
         {/* Average Confidence */}
@@ -56,7 +71,7 @@ export function MetricsDashboard({ predictions }: MetricsDashboardProps) {
             <p className="text-xs text-muted-foreground">Confianza Promedio</p>
             <Zap className="w-4 h-4 text-accent" />
           </div>
-          <p className="text-2xl font-bold text-foreground">{avgConfidence}%</p>
+          <p className="text-2xl font-bold text-foreground">{metrics.avgConfidence}%</p>
         </div>
 
         {/* Most Common Classification */}
@@ -65,7 +80,7 @@ export function MetricsDashboard({ predictions }: MetricsDashboardProps) {
             <p className="text-xs text-muted-foreground">Clase Más Común</p>
             <Target className="w-4 h-4 text-secondary" />
           </div>
-          <p className="text-lg font-bold text-foreground truncate">{mostCommon}</p>
+          <p className="text-lg font-bold text-foreground truncate">{metrics.mostCommon}</p>
         </div>
 
         {/* Response Time */}
@@ -74,7 +89,7 @@ export function MetricsDashboard({ predictions }: MetricsDashboardProps) {
             <p className="text-xs text-muted-foreground">Tiempo Promedio</p>
             <span className="w-4 h-4 rounded-full bg-primary/50" />
           </div>
-          <p className="text-2xl font-bold text-foreground">{avgResponseTime}</p>
+          <p className="text-2xl font-bold text-foreground">{metrics.avgResponseTime}</p>
         </div>
       </div>
     </div>

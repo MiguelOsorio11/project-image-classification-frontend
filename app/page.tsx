@@ -34,16 +34,21 @@ export default function Home() {
       if (!response.ok) throw new Error("Prediction failed")
 
       const data = await response.json()
+      console.log("[v0] API Response:", data)
 
       const prediction: Prediction = {
         id: Date.now().toString(),
         image: URL.createObjectURL(file),
-        classification: data.classification,
+        classification: data.predicted_class, // Changed from data.classification
         confidence: data.confidence,
-        alternatives: data.alternatives || [],
+        alternatives: Object.entries(data.topk || {}).map(([label, score]) => ({
+          label,
+          score: score as number,
+        })),
         timestamp: new Date(),
       }
 
+      console.log("[v0] Mapped Prediction:", prediction)
       setCurrentPrediction(prediction)
       setPredictions([prediction, ...predictions])
     } catch (error) {
